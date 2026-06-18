@@ -4,7 +4,7 @@ A production-oriented GitOps deployment implementation for a cloud-native Task M
 
 This repository demonstrates modern Kubernetes application delivery practices, including Helm-based packaging, multi-environment configuration management, GitOps workflows, automated image promotion, TLS automation, service networking, and stateful workload deployment.
 
-The deployment includes:
+The deployment stack includes:
 
 * Task Management Application
 * MongoDB StatefulSet
@@ -12,7 +12,7 @@ The deployment includes:
 * cert-manager Certificate
 * Istio Gateway
 * Istio VirtualService
-* FluxCD HelmRelease Resources
+* FluxCD GitOps Deployment
 
 ---
 
@@ -20,64 +20,70 @@ The deployment includes:
 
 * Helm-based application packaging
 * FluxCD GitOps deployment workflow
-* Kubernetes-native configuration management
+* Environment-specific configuration management
 * MongoDB StatefulSet with persistent storage
 * Redis session management
 * cert-manager TLS automation
 * Istio ingress and traffic routing
 * Security-focused container configuration
 * Reusable Helm helpers and templating
-* Environment-specific configuration management
-* Automated image promotion through GitOps
+* Automated image promotion through GitHub Actions
 
 ---
 
-## GitOps Deployment
+## Deployment Stack
 
-This repository is designed to support GitOps-based deployments using FluxCD and HelmRelease resources.
+* Kubernetes
+* Helm
+* FluxCD
+* Istio
+* cert-manager
+* MongoDB
+* Redis
+* GitHub Actions
+* GitHub Container Registry (GHCR)
 
-Environment-specific configurations are separated into dedicated directories:
+---
+
+## Related Repositories
+
+### Application Repository
+
+The application source code is maintained separately.
+
+Repository:
 
 ```text
-clusters/
-├── dev/
-└── prod/
+github.com/crchiran/golang-task-management-app
 ```
 
-Each environment contains:
+Responsibilities:
 
-* HelmRelease resource
+* Go application source code
+* Dockerfile
+* Unit tests
+* Integration tests
+* GitHub Actions CI/CD pipeline
+* Container image builds
+* Security scanning with Trivy
+* Publishing container images to GitHub Container Registry (GHCR)
+* Updating deployment image versions in the GitOps repository
+
+---
+
+### Deployment Repository
+
+This repository contains:
+
+* Helm chart
+* Kubernetes manifests
+* Helm templates
+* FluxCD HelmRelease resources
 * Environment-specific values
-* Independent image versions
-* Environment-specific application configuration
+* Deployment configuration
+* GitOps workflow
 
-This enables the same Helm chart to be deployed consistently across multiple environments while maintaining isolated configuration.
-
----
-
-## Architecture
-
-```text
-                      Internet
-                          │
-                          ▼
-                   Istio Gateway
-                          │
-                          ▼
-                   VirtualService
-                          │
-                          ▼
-               Task Management App
-                          │
-              ┌───────────┴───────────┐
-              ▼                       ▼
-           MongoDB                 Redis
-        (StatefulSet)         (Deployment)
-```
-
----
-
-## Repository Structure
+Repository Structure:
 
 ```text
 .
@@ -122,30 +128,61 @@ This enables the same Helm chart to be deployed consistently across multiple env
 
 ---
 
-## Deployment Modes
-
-This repository supports two deployment methods.
-
-### Helm Deployment
-
-Deploy directly using Helm:
-
-```bash
-helm upgrade --install task-management . \
-  --namespace task-management \
-  --create-namespace
-```
-
-### FluxCD GitOps Deployment
-
-Deploy using FluxCD and HelmRelease resources:
+## Deployment Workflow
 
 ```text
-clusters/dev/task-management/
-clusters/prod/task-management/
+Developer
+    │
+    ▼
+Application Repository
+(golang-task-management-app)
+    │
+    ▼
+GitHub Actions
+    │
+    ├── Go Format Validation
+    ├── Go Vet
+    ├── Unit Tests
+    ├── Integration Tests
+    ├── Trivy Source Scan
+    ├── Docker Build
+    ├── Trivy Image Scan
+    └── Push Image to GHCR
+    │
+    ▼
+Update values.yaml
+    │
+    ▼
+Deployment Repository
+    │
+    ▼
+FluxCD
+    │
+    ▼
+Kubernetes Cluster
 ```
 
-FluxCD continuously reconciles the desired state from Git into the Kubernetes cluster.
+---
+
+## Architecture
+
+```text
+                      Internet
+                          │
+                          ▼
+                   Istio Gateway
+                          │
+                          ▼
+                   VirtualService
+                          │
+                          ▼
+               Task Management App
+                          │
+              ┌───────────┴───────────┐
+              ▼                       ▼
+           MongoDB                 Redis
+        (StatefulSet)         (Deployment)
+```
 
 ---
 
@@ -354,7 +391,7 @@ helm upgrade --install task-management . \
 
 ## FluxCD Deployment
 
-Example HelmRelease structure:
+Example environment structure:
 
 ```text
 clusters/dev/task-management/
@@ -363,27 +400,6 @@ clusters/dev/task-management/
 ```
 
 FluxCD continuously monitors the Git repository and reconciles the desired state into the Kubernetes cluster.
-
-Deployment workflow:
-
-```text
-Developer
-    │
-    ▼
-GitHub Actions
-    │
-    ▼
-Update values.yaml image tag
-    │
-    ▼
-Git Repository
-    │
-    ▼
-FluxCD
-    │
-    ▼
-Kubernetes Cluster
-```
 
 ---
 
@@ -435,7 +451,7 @@ kubectl get virtualservice -A
 
 ## Upgrade
 
-Upgrade the release:
+Upgrade the release manually:
 
 ```bash
 helm upgrade task-management . \
@@ -479,9 +495,9 @@ kubectl delete pvc -n task-management --all
 
 > **Note**
 >
-> This project uses `hudai.xyz` domains throughout the examples and default configuration because they are used in the author's environment.
+> This chart uses `hudai.xyz` domains throughout the examples and default configuration because they are used in the author's environment.
 >
-> Before deploying the application, update all domain-related values to match your own DNS records, certificates, and ingress configuration.
+> Before deploying the chart, update all domain-related values to match your own DNS records, certificates, and ingress configuration.
 
 Example:
 
@@ -499,24 +515,25 @@ Ensure that:
 
 ---
 
-## Project Status
+## Project Goals
 
-This project serves as both:
+This repository demonstrates how to deploy and manage a cloud-native application using modern Kubernetes and GitOps practices.
 
-* A reusable Helm chart for Kubernetes application deployment
-* A GitOps deployment example using FluxCD and HelmRelease resources
-
-It demonstrates:
+Key areas covered:
 
 * Helm chart development
-* Kubernetes application packaging
-* Environment-specific configuration management
-* GitOps deployment workflows
-* FluxCD reconciliation
-* Container image promotion through Git
+* FluxCD GitOps workflows
+* Multi-environment deployments
+* Stateful workload management
 * TLS certificate automation
-* Istio traffic management
+* Service networking with Istio
+* Automated image promotion
+* Kubernetes application lifecycle management
 
-The repository is intended as a practical reference for building and operating cloud-native applications using Helm, FluxCD, Kubernetes, and GitOps principles.
+---
+
+## License
+
+MIT
 
 ---
