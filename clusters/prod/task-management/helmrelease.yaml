@@ -5,16 +5,21 @@ metadata:
   namespace: task-management
 spec:
   interval: 5m
+  releaseName: task-management
 
   chart:
     spec:
-      chart: ./charts/task-management
+      chart: .
       sourceRef:
         kind: GitRepository
         name: flux-system
         namespace: flux-system
+      interval: 5m
 
-  releaseName: task-management
+  valuesFrom:
+    - kind: ConfigMap
+      name: task-management-values
+      valuesKey: values.yaml
 
   install:
     remediation:
@@ -23,8 +28,3 @@ spec:
   upgrade:
     remediation:
       retries: 3
-
-  valuesFrom:
-    - kind: ConfigMap
-      name: task-management-values
-      valuesKey: values.yaml

@@ -1,5 +1,15 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
+
 resources:
-- helmrelease.yaml
-- namespace.yaml
+  - namespace.yaml
+  - helmrelease.yaml
+
+configMapGenerator:
+  - name: task-management-values
+    namespace: task-management
+    files:
+      - values.yaml=values.yaml
+
+generatorOptions:
+  disableNameSuffixHash: true
