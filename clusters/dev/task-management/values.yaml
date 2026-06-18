@@ -5,7 +5,7 @@ app:
   replicas: 1
   image:
     repository: ghcr.io/crchiran/golang-task-management-app
-    tag: dev-ebbe169-20260618-1633-8
+    tag: dev-36adcee-20260618-2347-10
     pullPolicy: IfNotPresent
 mongodb:
   replicas: 1
