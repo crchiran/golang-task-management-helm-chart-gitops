@@ -1,10 +1,10 @@
-# Task Management Application Helm Chart
+# Task Management Application Helm & FluxCD GitOps
 
-A Helm chart for deploying a cloud-native Task Management Application on Kubernetes.
+A production-oriented GitOps deployment implementation for a cloud-native Task Management Application using Kubernetes, Helm, FluxCD, Istio, cert-manager, MongoDB, and Redis.
 
-This project demonstrates how to package, configure, and deploy a complete application stack using Helm, including application services, databases, session storage, TLS certificate management, and Istio-based traffic routing.
+This repository demonstrates modern Kubernetes application delivery practices, including Helm-based packaging, multi-environment configuration management, GitOps workflows, automated image promotion, TLS automation, service networking, and stateful workload deployment.
 
-The chart deploys:
+The deployment includes:
 
 * Task Management Application
 * MongoDB StatefulSet
@@ -12,12 +12,14 @@ The chart deploys:
 * cert-manager Certificate
 * Istio Gateway
 * Istio VirtualService
+* FluxCD HelmRelease Resources
 
 ---
 
 ## Highlights
 
 * Helm-based application packaging
+* FluxCD GitOps deployment workflow
 * Kubernetes-native configuration management
 * MongoDB StatefulSet with persistent storage
 * Redis session management
@@ -26,7 +28,7 @@ The chart deploys:
 * Security-focused container configuration
 * Reusable Helm helpers and templating
 * Environment-specific configuration management
-* FluxCD GitOps deployment support
+* Automated image promotion through GitOps
 
 ---
 
@@ -117,6 +119,33 @@ This enables the same Helm chart to be deployed consistently across multiple env
     ├── gateway.yaml
     └── virtualservice.yaml
 ```
+
+---
+
+## Deployment Modes
+
+This repository supports two deployment methods.
+
+### Helm Deployment
+
+Deploy directly using Helm:
+
+```bash
+helm upgrade --install task-management . \
+  --namespace task-management \
+  --create-namespace
+```
+
+### FluxCD GitOps Deployment
+
+Deploy using FluxCD and HelmRelease resources:
+
+```text
+clusters/dev/task-management/
+clusters/prod/task-management/
+```
+
+FluxCD continuously reconciles the desired state from Git into the Kubernetes cluster.
 
 ---
 
@@ -347,7 +376,7 @@ GitHub Actions
 Update values.yaml image tag
     │
     ▼
-GitOps Repository
+Git Repository
     │
     ▼
 FluxCD
@@ -450,9 +479,9 @@ kubectl delete pvc -n task-management --all
 
 > **Note**
 >
-> This chart uses `hudai.xyz` domains throughout the examples and default configuration because they are used in the author's environment.
+> This project uses `hudai.xyz` domains throughout the examples and default configuration because they are used in the author's environment.
 >
-> Before deploying the chart, update all domain-related values to match your own DNS records, certificates, and ingress configuration.
+> Before deploying the application, update all domain-related values to match your own DNS records, certificates, and ingress configuration.
 
 Example:
 
@@ -487,5 +516,7 @@ It demonstrates:
 * Container image promotion through Git
 * TLS certificate automation
 * Istio traffic management
+
+The repository is intended as a practical reference for building and operating cloud-native applications using Helm, FluxCD, Kubernetes, and GitOps principles.
 
 ---
