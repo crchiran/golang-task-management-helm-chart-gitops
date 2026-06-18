@@ -1,6 +1,6 @@
 apiVersion: v2
 name: task-management
-description: Helm chart for Task Management App with MongoDB and Redis
+description: Helm chart for a cloud-native Task Management Application with Go, MongoDB, Redis, Istio and cert-manager
 type: application
 version: 0.1.0
 appVersion: "1.0.0"
