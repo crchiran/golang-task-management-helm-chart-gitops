@@ -25,7 +25,31 @@ The chart deploys:
 * Istio ingress and traffic routing
 * Security-focused container configuration
 * Reusable Helm helpers and templating
-* Environment-specific configuration through values files
+* Environment-specific configuration management
+* FluxCD GitOps deployment support
+
+---
+
+## GitOps Deployment
+
+This repository is designed to support GitOps-based deployments using FluxCD and HelmRelease resources.
+
+Environment-specific configurations are separated into dedicated directories:
+
+```text
+clusters/
+├── dev/
+└── prod/
+```
+
+Each environment contains:
+
+* HelmRelease resource
+* Environment-specific values
+* Independent image versions
+* Environment-specific application configuration
+
+This enables the same Helm chart to be deployed consistently across multiple environments while maintaining isolated configuration.
 
 ---
 
@@ -58,9 +82,20 @@ The chart deploys:
 ├── Chart.yaml
 ├── README.md
 ├── values.yaml
+│
+├── clusters
+│   ├── dev
+│   │   └── task-management
+│   │       ├── helmrelease.yaml
+│   │       └── values.yaml
+│   │
+│   └── prod
+│       └── task-management
+│           ├── helmrelease.yaml
+│           └── values.yaml
+│
 └── templates
     ├── _helpers.tpl
-    │
     ├── namespace.yaml
     │
     ├── app-configmap.yaml
@@ -196,23 +231,24 @@ templates/virtualservice.yaml
 ## Technologies Used
 
 * Helm
+* FluxCD
 * Kubernetes
 * MongoDB
 * Redis
 * Istio
 * cert-manager
-* TLS Certificates
 * ConfigMaps
 * Secrets
-* StatefulSets
 * Deployments
+* StatefulSets
 * Persistent Volumes
+* TLS Certificates
 
 ---
 
 ## Configuration
 
-All application configuration is managed through:
+Base chart configuration is managed through:
 
 ```text
 values.yaml
@@ -231,15 +267,29 @@ redis:
   replicas: 1
 ```
 
-Validate the rendered manifests:
+---
 
-```bash
-helm template task-management .
+## Environment Configuration
+
+Environment-specific overrides are maintained separately.
+
+```text
+clusters/dev/task-management/values.yaml
+clusters/prod/task-management/values.yaml
 ```
+
+This allows independent configuration of:
+
+* Container image tags
+* Replica counts
+* Resource requests and limits
+* Domain names
+* TLS settings
+* Environment variables
 
 ---
 
-## Installation
+## Validate the Chart
 
 Validate chart syntax:
 
@@ -247,19 +297,63 @@ Validate chart syntax:
 helm lint .
 ```
 
-Render manifests:
+Render manifests locally:
 
 ```bash
-helm template task-management . \
-  -n task-management
+helm template task-management .
 ```
 
-Install the chart:
+Render manifests to a file:
+
+```bash
+helm template task-management . > manifests.yaml
+```
+
+---
+
+## Local Installation
+
+Install directly using Helm:
 
 ```bash
 helm upgrade --install task-management . \
-  -n task-management \
+  --namespace task-management \
   --create-namespace
+```
+
+---
+
+## FluxCD Deployment
+
+Example HelmRelease structure:
+
+```text
+clusters/dev/task-management/
+├── helmrelease.yaml
+└── values.yaml
+```
+
+FluxCD continuously monitors the Git repository and reconciles the desired state into the Kubernetes cluster.
+
+Deployment workflow:
+
+```text
+Developer
+    │
+    ▼
+GitHub Actions
+    │
+    ▼
+Update values.yaml image tag
+    │
+    ▼
+GitOps Repository
+    │
+    ▼
+FluxCD
+    │
+    ▼
+Kubernetes Cluster
 ```
 
 ---
@@ -290,47 +384,47 @@ Verify Services:
 kubectl get svc -n task-management
 ```
 
-Verify Certificate:
+Verify Certificates:
 
 ```bash
-kubectl get certificate -n istio-system
+kubectl get certificate -A
 ```
 
-Verify Gateway:
+Verify Gateways:
 
 ```bash
-kubectl get gateway -n istio-system
+kubectl get gateway -A
 ```
 
-Verify VirtualService:
+Verify VirtualServices:
 
 ```bash
-kubectl get virtualservice -n task-management
+kubectl get virtualservice -A
 ```
 
 ---
 
 ## Upgrade
 
-Upgrade the release after modifying templates or values:
+Upgrade the release:
 
 ```bash
 helm upgrade task-management . \
-  -n task-management
+  --namespace task-management
 ```
 
 View release history:
 
 ```bash
 helm history task-management \
-  -n task-management
+  --namespace task-management
 ```
 
 Rollback if required:
 
 ```bash
 helm rollback task-management <revision> \
-  -n task-management
+  --namespace task-management
 ```
 
 ---
@@ -341,7 +435,7 @@ Remove the Helm release:
 
 ```bash
 helm uninstall task-management \
-  -n task-management
+  --namespace task-management
 ```
 
 Remove persistent storage if required:
@@ -352,35 +446,46 @@ kubectl delete pvc -n task-management --all
 
 ---
 
-## Project Status
-
-This project is maintained as a reference Helm chart for deploying a cloud-native Task Management Application on Kubernetes.
-
-It demonstrates application packaging, configuration management, persistent storage, service networking, TLS certificate automation, and Istio traffic routing using reusable Helm templates.
-
----
-
 ## Domain Configuration
 
 > **Note**
 >
 > This chart uses `hudai.xyz` domains throughout the examples and default configuration because they are used in the author's environment.
 >
-> Before deploying the chart, update all domain-related values in `values.yaml` to match your own DNS records, TLS certificates, and ingress configuration.
->
-> Example:
->
-> ```yaml
-> ingress:
->   host: your-domain.com
-> ```
->
-> Ensure that:
->
-> * DNS records point to your Kubernetes ingress endpoint
-> * TLS certificates are issued for your domain
-> * Gateway and VirtualService resources reference your hostnames
-> * cert-manager ClusterIssuer is configured for your environment
+> Before deploying the chart, update all domain-related values to match your own DNS records, certificates, and ingress configuration.
 
+Example:
+
+```yaml
+ingress:
+  host: your-domain.com
+```
+
+Ensure that:
+
+* DNS records point to your Kubernetes ingress endpoint
+* TLS certificates are issued for your domain
+* Gateway and VirtualService resources reference your hostnames
+* cert-manager ClusterIssuer is configured for your environment
+
+---
+
+## Project Status
+
+This project serves as both:
+
+* A reusable Helm chart for Kubernetes application deployment
+* A GitOps deployment example using FluxCD and HelmRelease resources
+
+It demonstrates:
+
+* Helm chart development
+* Kubernetes application packaging
+* Environment-specific configuration management
+* GitOps deployment workflows
+* FluxCD reconciliation
+* Container image promotion through Git
+* TLS certificate automation
+* Istio traffic management
 
 ---
