@@ -71,7 +71,7 @@ Responsibilities:
 
 ---
 
-### Deployment Repository
+### GitOps Deployment Repository
 
 This repository contains:
 
@@ -79,6 +79,8 @@ This repository contains:
 * Kubernetes manifests
 * Helm templates
 * FluxCD HelmRelease resources
+* FluxCD Kustomization resources
+* Namespace management
 * Environment-specific values
 * Deployment configuration
 * GitOps workflow
@@ -93,37 +95,41 @@ Repository Structure:
 │
 ├── clusters
 │   ├── dev
+│   │   ├── kustomization.yaml
 │   │   └── task-management
 │   │       ├── helmrelease.yaml
+│   │       ├── kustomization.yaml
+│   │       ├── namespace.yaml
 │   │       └── values.yaml
 │   │
 │   └── prod
+│       ├── kustomization.yaml
 │       └── task-management
 │           ├── helmrelease.yaml
+│           ├── kustomization.yaml
+│           ├── namespace.yaml
 │           └── values.yaml
 │
-└── templates
-    ├── _helpers.tpl
-    ├── namespace.yaml
-    │
-    ├── app-configmap.yaml
-    ├── app-secret.yaml
-    ├── app-deployment.yaml
-    ├── app-service.yaml
-    │
-    ├── mongodb-secret.yaml
-    ├── mongodb-init-configmap.yaml
-    ├── mongodb-statefulset.yaml
-    ├── mongodb-service.yaml
-    ├── mongodb-headless-service.yaml
-    │
-    ├── redis-secret.yaml
-    ├── redis-deployment.yaml
-    ├── redis-service.yaml
-    │
-    ├── certificate.yaml
-    ├── gateway.yaml
-    └── virtualservice.yaml
+├── templates
+│   ├── _helpers.tpl
+│   ├── app-configmap.yaml
+│   ├── app-deployment.yaml
+│   ├── app-secret.yaml
+│   ├── app-service.yaml
+│   ├── certificate.yaml
+│   ├── gateway.yaml
+│   ├── mongodb-headless-service.yaml
+│   ├── mongodb-init-configmap.yaml
+│   ├── mongodb-secret.yaml
+│   ├── mongodb-service.yaml
+│   ├── mongodb-statefulset.yaml
+│   ├── namespace.yaml
+│   ├── redis-deployment.yaml
+│   ├── redis-secret.yaml
+│   ├── redis-service.yaml
+│   └── virtualservice.yaml
+│
+└── values.yaml
 ```
 
 ---
@@ -150,10 +156,11 @@ GitHub Actions
     └── Push Image to GHCR
     │
     ▼
-Update values.yaml
+Update Environment Values
+(dev/prod image tag)
     │
     ▼
-Deployment Repository
+GitOps Repository
     │
     ▼
 FluxCD
@@ -352,6 +359,7 @@ This allows independent configuration of:
 * Domain names
 * TLS settings
 * Environment variables
+* Certificate issuers
 
 ---
 
@@ -367,6 +375,22 @@ Render manifests locally:
 
 ```bash
 helm template task-management .
+```
+
+Render manifests using production values:
+
+```bash
+helm template task-management . \
+  -f values.yaml \
+  -f clusters/prod/task-management/values.yaml
+```
+
+Render manifests using development values:
+
+```bash
+helm template task-management . \
+  -f values.yaml \
+  -f clusters/dev/task-management/values.yaml
 ```
 
 Render manifests to a file:
@@ -391,15 +415,44 @@ helm upgrade --install task-management . \
 
 ## FluxCD Deployment
 
-Example environment structure:
+Environment-specific resources are managed through FluxCD Kustomizations and HelmRelease resources.
+
+Development Environment:
 
 ```text
-clusters/dev/task-management/
-├── helmrelease.yaml
-└── values.yaml
+clusters/dev
+├── kustomization.yaml
+└── task-management
+    ├── namespace.yaml
+    ├── kustomization.yaml
+    ├── helmrelease.yaml
+    └── values.yaml
+```
+
+Production Environment:
+
+```text
+clusters/prod
+├── kustomization.yaml
+└── task-management
+    ├── namespace.yaml
+    ├── kustomization.yaml
+    ├── helmrelease.yaml
+    └── values.yaml
 ```
 
 FluxCD continuously monitors the Git repository and reconciles the desired state into the Kubernetes cluster.
+
+Example bootstrap:
+
+```bash
+flux bootstrap github \
+  --owner=<github-user> \
+  --repository=<gitops-repository> \
+  --branch=main \
+  --path=clusters/prod \
+  --personal=true
+```
 
 ---
 
@@ -445,6 +498,13 @@ Verify VirtualServices:
 
 ```bash
 kubectl get virtualservice -A
+```
+
+Verify FluxCD resources:
+
+```bash
+flux get kustomizations -A
+flux get helmreleases -A
 ```
 
 ---
@@ -495,9 +555,9 @@ kubectl delete pvc -n task-management --all
 
 > **Note**
 >
-> This chart uses `hudai.xyz` domains throughout the examples and default configuration because they are used in the author's environment.
+> This repository uses `hudai.xyz` domains throughout the examples and default configuration because they are used in the author's environment.
 >
-> Before deploying the chart, update all domain-related values to match your own DNS records, certificates, and ingress configuration.
+> Before deploying, update all domain-related values to match your own DNS records, certificates, and ingress configuration.
 
 Example:
 
@@ -529,6 +589,7 @@ Key areas covered:
 * Service networking with Istio
 * Automated image promotion
 * Kubernetes application lifecycle management
+* Environment-specific configuration management
 
 ---
 
