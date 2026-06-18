@@ -1,0 +1,30 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: task-management
+  namespace: task-management
+spec:
+  interval: 5m
+
+  chart:
+    spec:
+      chart: ./charts/task-management
+      sourceRef:
+        kind: GitRepository
+        name: flux-system
+        namespace: flux-system
+
+  releaseName: task-management
+
+  install:
+    remediation:
+      retries: 3
+
+  upgrade:
+    remediation:
+      retries: 3
+
+  valuesFrom:
+    - kind: ConfigMap
+      name: task-management-values
+      valuesKey: values.yaml

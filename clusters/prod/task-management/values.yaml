@@ -1,0 +1,32 @@
+namespace:
+  create: false
+  name: task-management
+
+app:
+  replicas: 1
+
+  image:
+    repository: ghcr.io/crchiran/golang-task-management-app
+    tag: prod-latest
+    pullPolicy: IfNotPresent
+
+mongodb:
+  replicas: 1
+
+redis:
+  replicas: 1
+
+ingress:
+  enabled: true
+
+  host: task.hudai.xyz
+
+  gatewayName: task-gateway
+  gatewayNamespace: istio-system
+
+  virtualServiceName: task-vs
+
+  certificateName: task-hudai-xyz-tls
+  secretName: task-hudai-xyz-tls
+
+  clusterIssuer: letsencrypt-prod
