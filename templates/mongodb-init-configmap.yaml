@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "task-management.mongodbInitConfigName" . }}
+  namespace: {{ include "task-management.namespace" . }}
+  labels:
+    {{- include "task-management.mongodbLabels" . | nindent 4 }}
+data:
+  create-app-user.js: |
+    const appDatabase = process.env.MONGO_APP_DATABASE;
+    const appUsername = process.env.MONGO_APP_USERNAME;
+    const appPassword = process.env.MONGO_APP_PASSWORD;
+
+    db = db.getSiblingDB(appDatabase);
+
+    db.createUser({
+      user: appUsername,
+      pwd: appPassword,
+      roles: [
+        {
+          role: "readWrite",
+          db: appDatabase
+        }
+      ]
+    });

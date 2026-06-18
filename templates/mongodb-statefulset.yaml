@@ -1,0 +1,90 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "task-management.mongodbName" . }}
+  namespace: {{ include "task-management.namespace" . }}
+  labels:
+    {{- include "task-management.mongodbLabels" . | nindent 4 }}
+spec:
+  serviceName: {{ include "task-management.mongodbHeadlessServiceName" . }}
+  replicas: {{ .Values.mongodb.replicas }}
+  selector:
+    matchLabels:
+      {{- include "task-management.mongodbSelectorLabels" . | nindent 6 }}
+  updateStrategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        {{- include "task-management.mongodbSelectorLabels" . | nindent 8 }}
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 999
+        runAsGroup: 999
+        fsGroup: 999
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: mongodb
+          image: {{ .Values.mongodb.image }}
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: mongodb
+              containerPort: {{ .Values.mongodb.containerPort }}
+              protocol: TCP
+          envFrom:
+            - secretRef:
+                name: {{ include "task-management.mongodbSecretName" . }}
+          volumeMounts:
+            - name: mongodb-storage
+              mountPath: /data/db
+            - name: mongodb-init-script
+              mountPath: /docker-entrypoint-initdb.d/create-app-user.js
+              subPath: create-app-user.js
+              readOnly: true
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 999
+            runAsGroup: 999
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false
+            capabilities:
+              drop:
+                - ALL
+          resources:
+            requests:
+              cpu: 128m
+              memory: 256Mi
+            limits:
+              cpu: 256m
+              memory: 512Mi
+          readinessProbe:
+            tcpSocket:
+              port: {{ .Values.mongodb.containerPort }}
+            initialDelaySeconds: 20
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: {{ .Values.mongodb.containerPort }}
+            initialDelaySeconds: 45
+            periodSeconds: 20
+      volumes:
+        - name: mongodb-init-script
+          configMap:
+            name: {{ include "task-management.mongodbInitConfigName" . }}
+
+  volumeClaimTemplates:
+    - metadata:
+        name: mongodb-storage
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        {{- if .Values.mongodb.storage.storageClassName }}
+        storageClassName: {{ .Values.mongodb.storage.storageClassName | quote }}
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ .Values.mongodb.storage.size }}

@@ -1,0 +1,16 @@
+{{- if .Values.ingress.enabled }}
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: {{ include "task-management.certificateName" . }}
+  namespace: {{ include "task-management.gatewayNamespace" . }}
+  labels:
+    {{- include "task-management.labels" . | nindent 4 }}
+spec:
+  secretName: {{ include "task-management.certificateSecretName" . }}
+  issuerRef:
+    name: {{ include "task-management.clusterIssuer" . }}
+    kind: ClusterIssuer
+  dnsNames:
+    - {{ include "task-management.host" . }}
+{{- end }}

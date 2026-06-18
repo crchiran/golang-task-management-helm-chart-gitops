@@ -1,0 +1,86 @@
+namespace:
+  create: true
+  name: task-management
+
+redis:
+  name: redis-sessions
+  serviceName: redis-sessions-svc
+  replicas: 1
+  image: redis:7-alpine
+
+  password: ""
+
+  maxmemory: 256mb
+  maxmemoryPolicy: allkeys-lru
+
+  service:
+    type: ClusterIP
+    port: 6379
+
+  containerPort: 6379
+
+mongodb:
+  name: mongodb
+  serviceName: mongodb-svc
+  headlessServiceName: mongodb-headless
+  image: mongo:8
+  replicas: 1
+  containerPort: 27017
+
+  service:
+    type: ClusterIP
+    port: 27017
+
+  storage:
+    size: 5Gi
+    storageClassName: ""
+
+  auth:
+    rootUsername: root
+
+    rootPassword: ""
+
+    appDatabase: task_management
+    appUsername: task_user
+    appPassword: ""
+
+app:
+  name: task-management-app
+  serviceName: task-management-app-svc
+  replicas: 2
+  containerPort: 8080
+
+  image:
+    repository: ghcr.io/crchiran/golang-task-management-app
+    tag: prod-ce22bae-20260613-0236-5
+    pullPolicy: IfNotPresent
+
+  imagePullSecrets:
+    - ghcr-secret
+
+  service:
+    type: ClusterIP
+    port: 80
+
+  config:
+    APP_ENV: production
+    APP_PORT: "8080"
+    LOG_LEVEL: INFO
+    TZ: Asia/Dhaka
+    MONGO_DATABASE: task_management
+    REDIS_ADDR: redis-sessions-svc.task-management.svc.cluster.local:6379
+
+ingress:
+  enabled: true
+
+  host: dev-task.hudai.xyz
+
+  gatewayName: task-gateway
+  gatewayNamespace: istio-system
+
+  virtualServiceName: task-vs
+
+  certificateName: dev-task-hudai-xyz-tls
+  secretName: dev-task-hudai-xyz-tls
+
+  clusterIssuer: letsencrypt-prod

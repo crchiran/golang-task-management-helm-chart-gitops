@@ -1,0 +1,24 @@
+{{- if .Values.ingress.enabled }}
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+metadata:
+  name: {{ include "task-management.virtualServiceName" . }}
+  namespace: {{ include "task-management.namespace" . }}
+  labels:
+    {{- include "task-management.appLabels" . | nindent 4 }}
+spec:
+  hosts:
+    - {{ include "task-management.host" . | quote }}
+
+  gateways:
+    - {{ include "task-management.gatewayReference" . }}
+
+  http:
+    - name: task-management-route
+      route:
+        - destination:
+            host: {{ include "task-management.appServiceName" . }}.{{ include "task-management.namespace" . }}.svc.cluster.local
+            port:
+              number: {{ .Values.app.service.port }}
+          weight: 100
+{{- end }}

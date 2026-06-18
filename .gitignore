@@ -1,0 +1,6 @@
+values-prod.yaml
+values-dev.local.yaml
+*.secret.yaml
+*.env
+.env
+!*.enc.yaml

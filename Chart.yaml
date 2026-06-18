@@ -1,0 +1,6 @@
+apiVersion: v2
+name: task-management
+description: Helm chart for Task Management App with MongoDB and Redis
+type: application
+version: 0.1.0
+appVersion: "1.0.0"

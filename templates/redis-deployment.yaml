@@ -1,0 +1,89 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "task-management.redisName" . }}
+  namespace: {{ include "task-management.namespace" . }}
+  labels:
+    {{- include "task-management.redisLabels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.redis.replicas }}
+  revisionHistoryLimit: 2
+  selector:
+    matchLabels:
+      {{- include "task-management.redisSelectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "task-management.redisSelectorLabels" . | nindent 8 }}
+        team: platform
+    spec:
+      automountServiceAccountToken: false
+      terminationGracePeriodSeconds: 30
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+        runAsNonRoot: true
+        runAsUser: 999
+        runAsGroup: 999
+        fsGroup: 999
+        fsGroupChangePolicy: OnRootMismatch
+      containers:
+        - name: redis
+          image: {{ .Values.redis.image }}
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "task-management.redisSecretName" . }}
+                  key: password
+          command:
+            - /bin/sh
+            - -c
+          args:
+            - |
+              set -eu
+              exec redis-server \
+                --bind 0.0.0.0 \
+                --port {{ .Values.redis.containerPort }} \
+                --requirepass "$REDIS_PASSWORD" \
+                --appendonly no \
+                --maxmemory {{ .Values.redis.maxmemory }} \
+                --maxmemory-policy {{ .Values.redis.maxmemoryPolicy }}
+          ports:
+            - name: redis
+              containerPort: {{ .Values.redis.containerPort }}
+              protocol: TCP
+          readinessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - redis-cli -h 127.0.0.1 -p {{ .Values.redis.containerPort }} -a "$REDIS_PASSWORD" ping | grep -q PONG
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+          livenessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - redis-cli -h 127.0.0.1 -p {{ .Values.redis.containerPort }} -a "$REDIS_PASSWORD" ping | grep -q PONG
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false
+            capabilities:
+              drop:
+                - ALL
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 250m
+              memory: 300Mi
