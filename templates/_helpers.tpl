@@ -22,7 +22,6 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{ .Values.namespace.name }}
 {{- end }}
 
-
 {{/* =========================
    Application
 ========================= */}}
@@ -40,7 +39,7 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{- end }}
 
 {{- define "task-management.appSecretName" -}}
-{{ printf "%s-secret" .Values.app.name }}
+{{ default (printf "%s-secret" .Values.app.name) .Values.app.secret.name }}
 {{- end }}
 
 {{- define "task-management.appSelectorLabels" -}}
@@ -53,7 +52,6 @@ app.kubernetes.io/component: application
 {{ include "task-management.labels" . }}
 app.kubernetes.io/component: application
 {{- end }}
-
 
 {{/* =========================
    MongoDB
@@ -72,7 +70,7 @@ app.kubernetes.io/component: application
 {{- end }}
 
 {{- define "task-management.mongodbSecretName" -}}
-mongodb-secret
+{{ default "mongodb-secret" .Values.mongodb.secret.name }}
 {{- end }}
 
 {{- define "task-management.mongodbInitConfigName" -}}
@@ -90,7 +88,6 @@ app.kubernetes.io/component: mongodb
 app.kubernetes.io/component: mongodb
 {{- end }}
 
-
 {{/* =========================
    Redis
 ========================= */}}
@@ -104,7 +101,7 @@ app.kubernetes.io/component: mongodb
 {{- end }}
 
 {{- define "task-management.redisSecretName" -}}
-redis-auth
+{{ default "redis-auth" .Values.redis.secret.name }}
 {{- end }}
 
 {{- define "task-management.redisSelectorLabels" -}}
@@ -117,7 +114,6 @@ app.kubernetes.io/component: redis
 {{ include "task-management.labels" . }}
 app.kubernetes.io/component: redis
 {{- end }}
-
 
 {{/* =========================
    Ingress / Istio

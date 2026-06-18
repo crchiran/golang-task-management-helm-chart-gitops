@@ -1,5 +1,5 @@
 namespace:
-  create: true
+  create: false
   name: task-management
 
 redis:
@@ -7,6 +7,9 @@ redis:
   serviceName: redis-sessions-svc
   replicas: 1
   image: redis:7-alpine
+  
+  secret:
+    create: false
 
   password: ""
 
@@ -26,6 +29,9 @@ mongodb:
   image: mongo:8
   replicas: 1
   containerPort: 27017
+  
+  secret:
+    create: false
 
   service:
     type: ClusterIP
@@ -50,6 +56,9 @@ app:
   replicas: 2
   containerPort: 8080
 
+  secret:
+    create: false
+
   image:
     repository: ghcr.io/crchiran/golang-task-management-app
     tag: prod-ce22bae-20260613-0236-5
@@ -71,16 +80,16 @@ app:
     REDIS_ADDR: redis-sessions-svc.task-management.svc.cluster.local:6379
 
 ingress:
-  enabled: true
+  enabled: false
 
-  host: dev-task.hudai.xyz
+  host: ""
 
   gatewayName: task-gateway
   gatewayNamespace: istio-system
 
-  virtualServiceName: task-vs
+  virtualServiceName: ""
 
-  certificateName: dev-task-hudai-xyz-tls
-  secretName: dev-task-hudai-xyz-tls
+  certificateName: ""
+  secretName: ""
 
-  clusterIssuer: letsencrypt-prod
+  clusterIssuer: ""
